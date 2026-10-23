@@ -1,0 +1,14 @@
+{
+  "name": "cyber-clawd",
+  "description": "CyberClawd: a cyberpunk startup banner and spinner for Claude Code",
+  "owner": {
+    "name": "liveinknewgithub"
+  },
+  "plugins": [
+    {
+      "name": "cyber-clawd",
+      "source": "./",
+      "description": "A neon, glitching, cyberpunk Clawd that boots up in place of Claude Code's startup logo"
+    }
+  ]
+}
