@@ -89,13 +89,8 @@ export const register: Register = on => {
       description: "Gives CyberClawd a row under the logo (it runs by itself at startup)",
     })
 
-    if ((await read($, phase)) !== 'skipped') {
-      if (isFresh) {
-        // No notice under the logo: the command's output row takes its place.
-        $.clock.after(NOTICE_WAIT_MS, () => {
-          if (notice === null && isFullscreen) void $.command.run({ command: 'cyber-clawd', args: '' })
-        })
-      }
+    const isPlaying = (await read($, phase)) !== 'skipped'
+    if (isPlaying) {
       $.clock.every(TICK_MS, () => {
         tick += 1
         // `/model` and `/effort` change the line mid-session.
@@ -111,7 +106,17 @@ export const register: Register = on => {
       })
     }
 
-    return next(e)
+    const started = await next(e)
+    if (isPlaying && isFresh) {
+      // No notice under the logo: the command's output row takes its place.
+      // The run starts before this hook returns: one started later, from a
+      // timer, skips this plugin's own hooks, and core answers a command no
+      // hook answered with an error.
+      await $.clock.sleep(NOTICE_WAIT_MS)
+      if (notice === null && isFullscreen) void $.command.run({ command: 'cyber-clawd', args: '' })
+    }
+
+    return started
   })
 
   on('ui.render', { component: 'PromptHint' }, ($, e, next) => {

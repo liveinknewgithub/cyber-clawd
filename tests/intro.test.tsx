@@ -69,7 +69,10 @@ function textOf(cells: string): string {
 test('a keystroke skips the transformation, and CyberClawd stays', async ($, on) => {
   const clock = mock.clock(on)
   engine(on, [])
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  // A fresh start waits out the notice window before it settles.
+  const started = $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await clock.advance(1000)
+  await started
 
   const notice = await $.ui.mount(NOTICE)
   expect((await notice.find({ type: 'Raster', key: 'cyber-clawd' }))?.props).toMatchObject({
@@ -88,7 +91,10 @@ test('a keystroke skips the transformation, and CyberClawd stays', async ($, on)
 test('CyberClawd outlasts the intro', async ($, on) => {
   const clock = mock.clock(on)
   engine(on, [])
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  // A fresh start waits out the notice window before it settles.
+  const started = $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  await clock.advance(1000)
+  await started
 
   const notice = await $.ui.mount(NOTICE)
   await clock.advance(60_000)
@@ -96,15 +102,25 @@ test('CyberClawd outlasts the intro', async ($, on) => {
   await notice.unmount()
 })
 
-test('with no notice under the logo, /cyber-clawd runs and hosts the banner', async ($, on) => {
+test('with no notice under the logo, the mod answers /cyber-clawd and it hosts the banner', async ($, on) => {
   const clock = mock.clock(on)
   const commands: string[] = []
   engine(on, [], commands)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  const started = $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
   const hint = await $.ui.mount({ ...HINT, props: { ...HINT.props, isDraft: false } })
 
   await clock.advance(1000)
-  expect(commands).toEqual(['cyber-clawd'])
+  await started
+  // The mod answers its own startup run, so none reaches core, which answers
+  // a run no hook answered with an error. (The kit sees nothing above that.)
+  expect(commands).toEqual([])
+  const typed = await $.command.run({
+    command: 'cyber-clawd',
+    args: '',
+    origin: { kind: 'composer' },
+    presentation: { isFullscreen: true, columns: 120 },
+  })
+  expect(typed).toMatchObject({ text: 'CyberClawd online.' })
 
   const output = await $.ui.mount(COMMAND)
   expect(await output.find({ type: 'Raster', key: 'cyber-clawd' })).toBeDefined()
@@ -116,11 +132,12 @@ test('a notice under the logo hosts it, and no command runs', async ($, on) => {
   const clock = mock.clock(on)
   const commands: string[] = []
   engine(on, [], commands)
-  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+  const started = $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
   const hint = await $.ui.mount({ ...HINT, props: { ...HINT.props, isDraft: false } })
   const notice = await $.ui.mount(NOTICE)
 
   await clock.advance(1000)
+  await started
   expect(commands).toEqual([])
   await notice.unmount()
   await hint.unmount()
@@ -140,9 +157,11 @@ test('a resumed conversation gets no intro and runs no command', async ($, on) =
 })
 
 test('the banner carries the stock header\'s model line', async ($, on) => {
-  mock.clock(on)
+  const clock = mock.clock(on)
   engine(on, [])
-  await $.session.start({ cwd: '/home/someone/code', surface: 'terminal', isInteractive: true })
+  const started = $.session.start({ cwd: '/home/someone/code', surface: 'terminal', isInteractive: true })
+  await clock.advance(1000)
+  await started
   // A keystroke skips the static, so the banner is whole.
   const hint = await $.ui.mount(HINT)
   await hint.unmount()
