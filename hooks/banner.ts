@@ -319,8 +319,18 @@ export function frame(tick: number, columns: number, info: HeaderInfo): Uint32Ar
   return words
 }
 
+// The frame cut into its rows, each packed as one one-row Raster's cells.
+export function frameRows(tick: number, columns: number, info: HeaderInfo): string[] {
+  const words = frame(tick, columns, info)
+  const size = columns * 3
+
+  return Array.from({ length: ROWS }, (_, row) => encode(words.subarray(row * size, (row + 1) * size)))
+}
+
 export function encode(words: Uint32Array): string {
-  const bytes = new Uint8Array(words.buffer) as Uint8Array & { toBase64(): string }
+  const bytes = new Uint8Array(words.buffer, words.byteOffset, words.byteLength) as Uint8Array & {
+    toBase64(): string
+  }
 
   return bytes.toBase64()
 }

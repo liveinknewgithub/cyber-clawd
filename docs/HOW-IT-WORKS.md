@@ -27,19 +27,23 @@ The host's hook returns three things in one tree:
 <Box flexDirection="column">
   {row}                                  {/* the row as Claude Code drew it */}
   <Box height={ROWS + place.top - 1} />  {/* room for the rest of the banner */}
-  <Box position="absolute" top={place.top} left={place.left}>
-    <Raster key="cyber-clawd" columns={columns} rows={9} cells={...} />
-  </Box>
+  {rows.map((cells, i) => (              /* the banner, one box a row */
+    <Box position="absolute" top={place.top + i} left={place.left}>
+      <Raster key={`cyber-clawd-${i}`} columns={columns} rows={1} cells={cells} />
+    </Box>
+  ))}
 </Box>
 ```
 
 `place` is where the logo's blank top row is relative to the host: 5 rows up for a notice, 7 for the command output (its own command line sits between). The empty `Box` makes the host row taller, so the 9-row banner never covers the conversation below it. Because the banner hangs off a transcript row, it scrolls away with the logo.
 
+Why a box a row: the transcript draws an absolute box that would start above the screen at the screen's top row instead of cutting off its top. As one 9-row box, the banner stayed whole at the top while the conversation scrolled up under it, until its host row left the screen. As nine one-row boxes drawn top to bottom, each row scrolled out lands on the top row, and the row that belongs there, drawn after it, covers it, so the banner scrolls out a row at a time.
+
 ## Drawing and animating
 
-The banner is one `Raster`: a grid of cells, each a character with a foreground and a background color, packed as base64 little-endian `u32` triplets. Clawd is pixel art drawn with `▀`, two pixels per cell (top in the foreground color, bottom in the background).
+The banner is nine one-row `Raster`s: grids of cells, each a character with a foreground and a background color, packed as base64 little-endian `u32` triplets. Clawd is pixel art drawn with `▀`, two pixels per cell (top in the foreground color, bottom in the background).
 
-[`banner.ts`](../hooks/banner.ts) is pure: `frame(tick, columns, info)` returns the cells for one moment. A `$.clock.every(80, …)` timer advances the tick and calls `$.ui.blit`, which repaints the mounted `Raster` in place without re-running any hook. While the host row is scrolled out of view (its `onScreen` is `null`), the timer skips the blits.
+[`banner.ts`](../hooks/banner.ts) is pure: `frame(tick, columns, info)` returns the cells for one moment, and `frameRows` cuts them into the nine rows. A `$.clock.every(80, …)` timer advances the tick and calls `$.ui.blit` for each row, which repaints the mounted `Raster`s in place without re-running any hook. While the host row is scrolled out of view (its `onScreen` is `null`), the timer skips the blits.
 
 The timeline:
 
@@ -89,7 +93,8 @@ After a change, run `claude plugin validate .` and `claude plugin test .`.
 
 - The banner draws, and a keystroke skips to the finished banner without removing it.
 - It outlasts the intro.
-- With no notice, `/cyber-clawd` runs and its output hosts the banner.
+- It is a box a row, top to bottom, so it scrolls out a row at a time.
+- With no notice, the mod answers its own `/cyber-clawd` and the output hosts the banner.
 - With a notice, no command runs.
 - A resumed session gets no intro and runs no command.
 - The model line reads like the stock header's.

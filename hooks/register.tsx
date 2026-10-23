@@ -3,7 +3,7 @@ import type { Elements, EngineInterface, OnScreen, Register, RenderElement, Rend
 
 import type { IntroPhase } from '../types'
 import type { HeaderInfo } from './banner'
-import { encode, frame, ROWS, TICK_MS, TRANSFORMED } from './banner'
+import { frameRows, ROWS, TICK_MS, TRANSFORMED } from './banner'
 import { cyberWord } from './spinner'
 
 // No mod draws the startup logo, and a drawing cannot leave the prompt's
@@ -97,10 +97,9 @@ export const register: Register = on => {
         if (tick % 25 === 0) void describeModel()
         if (tick === TRANSFORMED) void update($, phase, () => 'done')
         if (live.host !== null && live.isVisible) {
-          void $.ui.blit({
-            requestId: live.host.requestId,
-            key: KEY,
-            cells: encode(frame(tick, live.columns, info)),
+          const { requestId } = live.host
+          frameRows(tick, live.columns, info).forEach((cells, row) => {
+            void $.ui.blit({ requestId, key: `${KEY}-${row}`, cells })
           })
         }
       })
@@ -140,7 +139,11 @@ export const register: Register = on => {
   on('command.run', { command: 'cyber-clawd' }, () => ({ text: 'CyberClawd online.' }))
 
   // The host row as the engine draws it, room kept under it for the rest of
-  // the banner, and the banner over the logo above.
+  // the banner, and the banner over the logo above, one Raster a row. The
+  // transcript draws a box that would start above the screen at the screen's
+  // top row instead, so one 9-row box stayed whole there while the transcript
+  // scrolled up under it. Row by row, top to bottom, each row scrolled out
+  // lands on the top row under the row that belongs there, drawn after it.
   const banner = ({ Box, Raster }: Elements['terminal'], row: RenderElement, kind: HostKind) => {
     const place = PLACES[kind]
 
@@ -148,14 +151,11 @@ export const register: Register = on => {
       <Box flexDirection="column">
         {row}
         <Box height={ROWS + place.top - 1} />
-        <Box position="absolute" top={place.top} left={place.left}>
-          <Raster
-            key={KEY}
-            columns={live.columns}
-            rows={ROWS}
-            cells={encode(frame(tick, live.columns, info))}
-          />
-        </Box>
+        {frameRows(tick, live.columns, info).map((cells, i) => (
+          <Box position="absolute" top={place.top + i} left={place.left}>
+            <Raster key={`${KEY}-${i}`} columns={live.columns} rows={1} cells={cells} />
+          </Box>
+        ))}
       </Box>
     )
   }
