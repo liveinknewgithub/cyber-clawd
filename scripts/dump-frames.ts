@@ -9,7 +9,7 @@ const out = process.argv[2] ?? 'frames.json'
 const columns = Number(process.argv[3] ?? 88)
 // Demo values, so no one's own model, plan or folder shows.
 const info: HeaderInfo = {
-  version: '2.1.309',
+  version: '2.1.318',
   model: 'Opus 5.5 with high effort',
   cwd: '~/projects/neon-city',
   notice: '',

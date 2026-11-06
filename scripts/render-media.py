@@ -26,7 +26,8 @@ DIM = 0x6C6C7C
 ORANGE = 0xD77757
 DEFAULT = 0x01000000
 TICK_MS = 80
-STOCK_FRAMES = 15  # the stock header, before the static starts
+STOCK_FRAMES = 15  # the stock header alone, before the static starts under it
+HEADER = 5  # a blank row, the stock header's three rows, a blank row
 
 # Quadrant glyphs by mask: top-left 1, top-right 2, bottom-left 4, bottom-right 8.
 QUADRANTS = " ▘▝▀▖▌▞▛▗▚▐▜▄▙▟█"
@@ -108,22 +109,26 @@ def prompt(draw, font, top, columns):
     text_row(draw, font, top + 3, 2, "? for shortcuts", DIM)
 
 
+def header(draw, font, data):
+    """The stock header, as Claude Code draws it; it stays above the banner."""
+    logo = [" ▐▛███▜▌", "▝▜█████▛▘", "  ▘▘ ▝▝"]
+    for row, line in enumerate(logo, start=1):
+        text_row(draw, font, row, 0, line, ORANGE)
+    text_row(draw, font, 1, 11, f"Claude Code v{data['version']}", DEFAULT_FG)
+    text_row(draw, font, 2, 11, data["model"], DIM)
+    text_row(draw, font, 3, 11, data["cwd"], DIM)
+
+
 def screen(font, data, cells):
     columns, rows = data["columns"], data["rows"]
-    image, draw = window(columns, rows + 5)
-    if cells is None:
-        # The stock header, as Claude Code draws it before CyberClawd.
-        logo = [" ▐▛███▜▌", "▝▜█████▛▘", "  ▘▘ ▝▝"]
-        for row, line in enumerate(logo, start=1):
-            text_row(draw, font, row, 0, line, ORANGE)
-        text_row(draw, font, 1, 11, f"Claude Code v{data['version']}", DEFAULT_FG)
-        text_row(draw, font, 2, 11, data["model"], DIM)
-        text_row(draw, font, 3, 11, data["cwd"], DIM)
-    else:
+    image, draw = window(columns, HEADER + rows + 5)
+    header(draw, font, data)
+    if cells is not None:
+        # The banner, in the row under the header.
         for i, (code, fg, bg) in enumerate(cells):
             row, column = divmod(i, columns)
-            cell(draw, font, PAD + column * CW, BAR + PAD + row * CH, chr(code), fg, bg)
-    prompt(draw, font, rows + 1, columns)
+            cell(draw, font, PAD + column * CW, BAR + PAD + (HEADER + row) * CH, chr(code), fg, bg)
+    prompt(draw, font, HEADER + rows + 1, columns)
     return image
 
 

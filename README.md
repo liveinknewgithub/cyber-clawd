@@ -6,7 +6,7 @@
 
 A Claude Code mod that boots a neon, glitching, cyberpunk Clawd up under the startup logo, and keeps it there.
 
-<img src="docs/media/cyber-clawd.gif" alt="The stock Claude Code logo dissolves into static, a cyan scan line draws in a neon cyberpunk Clawd banner, and it keeps animating" width="880">
+<img src="docs/media/cyber-clawd.gif" alt="Static boots up under the stock Claude Code header, a cyan scan line draws in a neon cyberpunk Clawd banner, and it keeps animating" width="880">
 
 [Install](#install) · [What it does](#what-it-does) · [Customize](#customize) · [How it works](docs/HOW-IT-WORKS.md) · [Limitations](#compatibility-and-limitations)
 
@@ -26,7 +26,7 @@ When a new Claude Code session starts, **static boots up** under the stock heade
 | ⌨️ **Out of your way** | The first keystroke skips straight to the finished banner. It scrolls away with the logo as the conversation grows and pauses its animation off screen |
 | 🔐 **Cyberpunk spinner** | The thinking spinner says things like *Jacking in…*, *Decrypting…*, *Burning chrome…* and *Ghosting the firewall…*: 24 words, one per turn |
 
-<img src="docs/media/banner.png" alt="The finished CyberClawd banner above the Claude Code prompt" width="880">
+<img src="docs/media/banner.png" alt="The finished CyberClawd banner under the stock header, above the Claude Code prompt" width="880">
 
 ## Install
 
