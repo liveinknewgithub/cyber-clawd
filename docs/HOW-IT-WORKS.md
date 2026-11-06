@@ -10,9 +10,9 @@ CyberClawd is a Claude Code **mod**: a plugin whose `hooks/hooks.json` names a T
 
 ## The problem: mods can't draw the logo
 
-Claude Code lets a mod redraw a fixed set of components: messages, tool rows, the spinner, the hint line under the prompt, the band above it, panes and a few more. The startup logo is not one of them, and there is no setting to hide it. So CyberClawd paints *over* it.
+Claude Code lets a mod redraw a fixed set of components: messages, tool rows, the spinner, the hint line under the prompt, the band above it, panes and a few more. The startup logo is not one of them, and there is no setting to hide it. So CyberClawd draws in the row *under* it.
 
-A `ui.render` hook can return a tree with a `Box` drawn `position: "absolute"` at negative offsets, which paints over the rows above it without moving them. That only works within one region of the screen, though: a drawing attached to the prompt area is clipped at the prompt area's top edge and never reaches the logo. It has to hang off a row in the **transcript**, the same scrolling region the logo is in.
+Until Claude Code 2.1.309 it painted over the logo instead: a `ui.render` hook can return a tree with a `Box` drawn `position: "absolute"` at negative offsets, and the transcript painted it over the rows above its own without moving them, as long as it hung off a row in the **transcript**, the same scrolling region the logo is in. From 2.1.316 the transcript clamps such a box to its own row's top-left corner, so nothing a mod draws reaches the logo any more. The banner now takes its row's place, and the stock header stays above it.
 
 ## The host row
 
@@ -21,23 +21,31 @@ At startup the transcript holds just the logo, and Claude Code raises a hookable
 1. If an `InfoNotice` is drawn under the logo, it hosts the banner. Nothing else happens.
 2. If none shows up within 600 ms of `session.start`, the mod runs its own `/cyber-clawd` command with `$.command.run`. The command's output row is a `CommandOutput`, which the mod can draw, and it lands right under the logo.
 
-The host's hook returns three things in one tree:
+The host's hook returns the banner in the row's place, one `Raster` a row:
 
 ```tsx
+// Over a notice: nine rows in the flow, where the notice was.
 <Box flexDirection="column">
-  {row}                                  {/* the row as Claude Code drew it */}
-  <Box height={ROWS + place.top - 1} />  {/* room for the rest of the banner */}
-  {rows.map((cells, i) => (              /* the banner, one box a row */
-    <Box position="absolute" top={place.top + i} left={place.left}>
+  {rows.map((cells, i) => (
+    <Raster key={`cyber-clawd-${i}`} columns={columns} rows={1} cells={cells} />
+  ))}
+</Box>
+
+// Over the command's output: Claude Code draws the `❯ /cyber-clawd` line as
+// the row's first row and the tree under it, so the banner is drawn one row
+// up, absolute, which covers that line too. The empty Box keeps the tree as
+// tall as the rest of the banner.
+<Box flexDirection="column">
+  <Box height={ROWS - 1} />
+  {rows.map((cells, i) => (
+    <Box position="absolute" top={i - 1} left={0}>
       <Raster key={`cyber-clawd-${i}`} columns={columns} rows={1} cells={cells} />
     </Box>
   ))}
 </Box>
 ```
 
-`place` is where the logo's blank top row is relative to the host: 5 rows up for a notice, 7 for the command output (its own command line sits between). The empty `Box` makes the host row taller, so the 9-row banner never covers the conversation below it. Because the banner hangs off a transcript row, it scrolls away with the logo.
-
-Why a box a row: the transcript draws an absolute box that would start above the screen at the screen's top row instead of cutting off its top. As one 9-row box, the banner stayed whole at the top while the conversation scrolled up under it, until its host row left the screen. As nine one-row boxes drawn top to bottom, each row scrolled out lands on the top row, and the row that belongs there, drawn after it, covers it, so the banner scrolls out a row at a time.
+The host's own text (the notice, or *CyberClawd online.*) is not drawn; the readout says the notice again. Either way the row is nine rows tall, so the banner never covers the conversation below it, and because it is a transcript row it scrolls away with the logo, a row at a time.
 
 ## Drawing and animating
 
@@ -63,7 +71,7 @@ The banner only draws when the render's viewport says `isFullscreen`. The defaul
 
 ## The readout
 
-The banner covers the stock header, so it says the same things again:
+The banner sits under the stock header and says the same things again, in its own style:
 
 - **Build:** `$.session.version()`.
 - **Model line:** `$.session.model()`, named by a `modelPicker` setting's label when there is one (else `claude-opus-5-5` becomes `Opus 5.5`), then `with <effort> effort` from `modelSettings.<model>.effortLevel` or `effortLevel`, then `· <plan>` from `oauthAccount.organizationType` in Claude Code's own `.claude.json` (in `$CLAUDE_CONFIG_DIR`, else your home folder). It's re-read every 2 seconds, so `/model` changes show up.
@@ -93,7 +101,7 @@ After a change, run `claude plugin validate .` and `claude plugin test .`.
 
 - The banner draws, and a keystroke skips to the finished banner without removing it.
 - It outlasts the intro.
-- It is a box a row, top to bottom, so it scrolls out a row at a time.
+- Over a notice it is nine rows in the flow; over the command's output it is drawn one row up, over the command line.
 - With no notice, the mod answers its own `/cyber-clawd` and the output hosts the banner.
 - With a notice, no command runs.
 - A resumed session gets no intro and runs no command.

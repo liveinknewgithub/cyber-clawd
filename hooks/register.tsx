@@ -1,26 +1,20 @@
 import { atom, read, update } from 'claude-code'
-import type { Elements, EngineInterface, OnScreen, Register, RenderElement, RenderViewport } from 'claude-code'
+import type { Elements, EngineInterface, OnScreen, Register, RenderViewport } from 'claude-code'
 
 import type { IntroPhase } from '../types'
 import type { HeaderInfo } from './banner'
 import { frameRows, ROWS, TICK_MS, TRANSFORMED } from './banner'
 import { cyberWord } from './spinner'
 
-// No mod draws the startup logo, and a drawing cannot leave the prompt's
-// area, so CyberClawd is painted over the logo from a row under it, in the
-// same scrolling region, and scrolls with the logo from there. The host is a
-// startup notice under the logo where Claude Code shows one (`▎ Using …`),
-// else the output of `/cyber-clawd`, which the mod runs once at startup.
+// No mod draws the startup logo, and since Claude Code 2.1.316 (2.1.309 let
+// it) the transcript clamps a row's absolute drawing to the row's own top-left
+// corner, so nothing a mod draws reaches the rows above it. CyberClawd boots
+// in the row under the logo instead, in the same scrolling region, and
+// scrolls with the logo from there. The host is a startup notice under the
+// logo where Claude Code shows one (`▎ Using …`), else the output of
+// `/cyber-clawd`, which the mod runs once at startup.
 type HostKind = 'notice' | 'command'
 type Host = { kind: HostKind; requestId: string }
-const PLACES: Record<HostKind, { top: number; left: number }> = {
-  // The blank top row, the logo's three rows, a blank row, then the notice,
-  // whose box starts two columns in, after its bar.
-  notice: { top: -5, left: -2 },
-  // The blank top row, the logo's three rows, two blank rows, the command's
-  // own line, then its output, whose box starts at the left edge.
-  command: { top: -7, left: 0 },
-}
 // How long a startup notice has to show up before the command is run.
 const NOTICE_WAIT_MS = 600
 
@@ -138,22 +132,28 @@ export const register: Register = on => {
 
   on('command.run', { command: 'cyber-clawd' }, () => ({ text: 'CyberClawd online.' }))
 
-  // The host row as the engine draws it, room kept under it for the rest of
-  // the banner, and the banner over the logo above, one Raster a row. The
-  // transcript draws a box that would start above the screen at the screen's
-  // top row instead, so one 9-row box stayed whole there while the transcript
-  // scrolled up under it. Row by row, top to bottom, each row scrolled out
-  // lands on the top row under the row that belongs there, drawn after it.
-  const banner = ({ Box, Raster }: Elements['terminal'], row: RenderElement, kind: HostKind) => {
-    const place = PLACES[kind]
+  // The banner in the host row's place, ROWS one-row Rasters, so the row is
+  // as tall as the banner, the conversation starts under it, and it scrolls
+  // out a row at a time. The host's own text (the notice, or `CyberClawd
+  // online.`) is not drawn; the readout says the notice again.
+  //
+  // A notice's tree starts on the notice's own row, so the rows go in the
+  // flow. The command's tree starts under the `❯ /cyber-clawd` line the
+  // engine draws, which is the row's first row: the rows are drawn absolute,
+  // one row up, which the engine allows (the clamp is to the row's corner,
+  // not the tree's), so the banner covers that line too.
+  const banner = ({ Box, Raster }: Elements['terminal'], kind: HostKind) => {
+    const rows = frameRows(tick, live.columns, info).map((cells, i) => (
+      <Raster key={`${KEY}-${i}`} columns={live.columns} rows={1} cells={cells} />
+    ))
+    if (kind === 'notice') return <Box flexDirection="column">{rows}</Box>
 
     return (
       <Box flexDirection="column">
-        {row}
-        <Box height={ROWS + place.top - 1} />
-        {frameRows(tick, live.columns, info).map((cells, i) => (
-          <Box position="absolute" top={place.top + i} left={place.left}>
-            <Raster key={`${KEY}-${i}`} columns={live.columns} rows={1} cells={cells} />
+        <Box height={ROWS - 1} />
+        {rows.map((raster, i) => (
+          <Box position="absolute" top={i - 1} left={0}>
+            {raster}
           </Box>
         ))}
       </Box>
@@ -167,14 +167,16 @@ export const register: Register = on => {
     }
 
     if (e.surface !== 'terminal' || !(await claim($, e, 'notice', live))) return next(e)
+    await next(e)
 
-    return banner($.ui.resolve(e), await next(e), 'notice')
+    return banner($.ui.resolve(e), 'notice')
   })
 
   on('ui.render', { component: 'CommandOutput', props: { command: 'cyber-clawd' } }, async ($, e, next) => {
     if (e.surface !== 'terminal' || !(await claim($, e, 'command', live))) return next(e)
+    await next(e)
 
-    return banner($.ui.resolve(e), await next(e), 'command')
+    return banner($.ui.resolve(e), 'command')
   })
 }
 

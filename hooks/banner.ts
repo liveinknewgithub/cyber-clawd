@@ -1,4 +1,4 @@
-// The CyberClawd banner that takes the startup logo's place: static, a scan
+// The CyberClawd banner that boots under the startup logo: static, a scan
 // line that draws it in, then the neon banner for good. Painted as Raster
 // cells; pure: nothing here touches `$`.
 
@@ -9,7 +9,7 @@ const SCAN = ROWS // one row a tick
 // The tick the banner is whole; it idles from then on.
 export const TRANSFORMED = BOOT + SCAN
 
-// What the stock header said, which the banner covers and says again.
+// What the stock header said, which the banner's readout says again.
 export type HeaderInfo = { version: string; model: string; cwd: string; notice: string }
 
 // Two pixels per terminal row, drawn as '▀' (top in fg, bottom in bg).
@@ -65,8 +65,8 @@ const CHROME_DARK = 0x7a8496
 const FLOOR = 0x8a1f73
 const RAIN_HEAD = 0x4a5cc4
 const RAIN_TAIL = 0x2d3672
-// Column 0 under the notice holds Claude Code's own dim bar, drawn over the
-// banner; the banner draws it on its other rows too, as one left edge.
+// Column 0 of a notice is Claude Code's own dim bar; the banner draws the
+// same bar down every row, as one left edge.
 const EDGE = 0x6c6c7c
 const DEFAULT = 0x01000000 // the terminal's own color
 const LABEL = 0x9aa3c7

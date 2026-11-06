@@ -8,7 +8,7 @@
     {
       "name": "cyber-clawd",
       "source": "./",
-      "description": "A neon, glitching, cyberpunk Clawd that boots up in place of Claude Code's startup logo"
+      "description": "A neon, glitching, cyberpunk Clawd that boots up under Claude Code's startup logo"
     }
   ]
 }

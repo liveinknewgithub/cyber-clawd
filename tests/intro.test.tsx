@@ -78,7 +78,8 @@ test('a keystroke skips the transformation, and CyberClawd stays', async ($, on)
   const rows = await notice.findAll({ type: 'Raster' })
   expect(rows).toHaveLength(9)
   expect(rows[0]?.props).toMatchObject({ columns: 120, rows: 1 })
-  expect((await notice.find({ type: 'Text' }))?.text).toBe('engine')
+  // The host's own text is not drawn; the readout says the notice again.
+  expect(await notice.find({ type: 'Text' })).toBeUndefined()
 
   const hint = await $.ui.mount(HINT)
   await clock.advance(100)
@@ -101,9 +102,11 @@ test('CyberClawd outlasts the intro', async ($, on) => {
   await notice.unmount()
 })
 
-// The transcript draws a box that would start above the screen at its top row,
-// so the banner is a box a row: a row scrolled out lands under the next one.
-test('the banner is a box a row, top to bottom, so it scrolls out a row at a time', async ($, on) => {
+// The transcript clamps a row's absolute drawing to the row's own top-left
+// corner (since 2.1.316), so over a notice the banner is nine rows in the
+// flow, in the notice's place: nothing hangs above or below the row, and it
+// scrolls out a row at a time.
+test('over a notice the banner is nine rows in the flow, in the notice\'s place', async ($, on) => {
   const clock = mock.clock(on)
   engine(on, [])
   const started = $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
@@ -111,9 +114,9 @@ test('the banner is a box a row, top to bottom, so it scrolls out a row at a tim
   await started
 
   const notice = await $.ui.mount(NOTICE)
-  const boxes = (await notice.findAll({ type: 'Box' })).filter(box => box.props.position === 'absolute')
-  // Over a notice the banner starts five rows up, at the logo's blank top row.
-  expect(boxes.map(box => box.props.top)).toEqual([-5, -4, -3, -2, -1, 0, 1, 2, 3])
+  const boxes = await notice.findAll({ type: 'Box' })
+  expect(boxes.filter(box => box.props.position === 'absolute')).toEqual([])
+  expect(boxes.filter(box => box.props.height !== undefined)).toEqual([])
   expect((await notice.findAll({ type: 'Raster' })).map(raster => raster.key)).toEqual(
     Array.from({ length: 9 }, (_, i) => `cyber-clawd-${i}`),
   )
@@ -142,6 +145,13 @@ test('with no notice under the logo, the mod answers /cyber-clawd and it hosts t
 
   const output = await $.ui.mount(COMMAND)
   expect(await output.find({ type: 'Raster', key: 'cyber-clawd-0' })).toBeDefined()
+  // The output's tree starts under the `❯ /cyber-clawd` line: the banner is
+  // drawn one row up over it, in a tree as tall as the banner less that line.
+  const boxes = await output.findAll({ type: 'Box' })
+  expect(boxes.filter(box => box.props.position === 'absolute').map(box => box.props.top)).toEqual([
+    -1, 0, 1, 2, 3, 4, 5, 6, 7,
+  ])
+  expect(boxes.filter(box => box.props.height !== undefined).map(box => box.props.height)).toEqual([8])
   await output.unmount()
   await hint.unmount()
 })

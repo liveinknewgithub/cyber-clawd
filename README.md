@@ -4,7 +4,7 @@
 
 **Jack Claude Code's mascot into the grid.**
 
-A Claude Code mod that boots a neon, glitching, cyberpunk Clawd up in place of the startup logo, and keeps it there.
+A Claude Code mod that boots a neon, glitching, cyberpunk Clawd up under the startup logo, and keeps it there.
 
 <img src="docs/media/cyber-clawd.gif" alt="The stock Claude Code logo dissolves into static, a cyan scan line draws in a neon cyberpunk Clawd banner, and it keeps animating" width="880">
 
@@ -16,13 +16,13 @@ A Claude Code mod that boots a neon, glitching, cyberpunk Clawd up in place of t
 
 ## What it does
 
-When a new Claude Code session starts, the stock orange Clawd **dissolves into static**, a **cyan scan line** draws in a 9-row neon banner row by row, and **CyberClawd stays as your header** for the rest of the session.
+When a new Claude Code session starts, **static boots up** under the stock header, a **cyan scan line** draws in a 9-row neon banner row by row, and **CyberClawd stays there** for the rest of the session.
 
 | | |
 |---|---|
 | 🦀 **CyberClawd** | Pixel-art Clawd with a cyan-to-violet visor, a glint sweeping across it, blinking pink eyes, a pink mohawk, a chrome arm with a pulsing joint, a data pulse running along a chest circuit, and glowing boots |
 | 🌧️ **The grid** | Falling neon rain, a magenta floor with a light running along it, and a glitch every few seconds that slips Clawd sideways with chromatic fringes |
-| 📟 **The readout** | A flickering `C L A U D E   C O D E` title, plus everything the stock header said: your build, `Opus 5.5 with high effort · Claude Pro`-style model line, and working folder |
+| 📟 **The readout** | A flickering `C L A U D E   C O D E` title, plus what the stock header says: your build, `Opus 5.5 with high effort · Claude Pro`-style model line, and working folder |
 | ⌨️ **Out of your way** | The first keystroke skips straight to the finished banner. It scrolls away with the logo as the conversation grows and pauses its animation off screen |
 | 🔐 **Cyberpunk spinner** | The thinking spinner says things like *Jacking in…*, *Decrypting…*, *Burning chrome…* and *Ghosting the firewall…*: 24 words, one per turn |
 
@@ -80,12 +80,12 @@ More detail in [How it works](docs/HOW-IT-WORKS.md#customizing).
 
 ## Compatibility and limitations
 
-- **Built on Claude Code 2.1.309.** CyberClawd is a *mod* (a plugin of function hooks), an API Claude Code marks as early access. It may change between releases.
+- **Built on Claude Code 2.1.318.** CyberClawd is a *mod* (a plugin of function hooks), an API Claude Code marks as early access. It may change between releases.
 - **Fullscreen layout only** for the banner (see above). The spinner works in the terminal, the desktop app and VS Code.
-- **It draws *over* the stock logo.** Mods can't replace the logo itself, so CyberClawd paints over it from a row just below. The stock logo shows for a moment before the static starts, and the layout positions were measured on 2.1.309; a Claude Code update that rearranges the header can throw them off.
+- **The stock logo stays.** Mods can't replace or hide the logo, and since Claude Code 2.1.316 a transcript row's drawing can't reach the rows above it either (on 2.1.309 CyberClawd painted over the logo from the row below; that version is in the git history). So the banner boots in the row under the header, and the header's three lines stay above it.
 - **On most setups it runs `/cyber-clawd` once per new session.** The banner needs a row under the logo to draw from. When Claude Code shows a startup notice there (for example *Using … (from settings.json)*), CyberClawd uses it. Otherwise it runs its own `/cyber-clawd` command, whose output row hosts the banner. That leaves a `/cyber-clawd` line in the session's history, and the model sees a short note that you ran it locally (about 50 tokens).
 - **Resumed sessions keep the stock header**, since the logo may not be where the banner expects it.
-- **The header is three rows taller**, so the banner never covers your conversation.
+- **The header is nine rows taller**, the banner's own, so it never covers your conversation.
 - **Narrow terminals** (under 54 columns) get Clawd and the rain without the readout.
 
 ### What it reads

@@ -1,7 +1,7 @@
 {
   "name": "cyber-clawd",
   "version": "1.0.0",
-  "description": "A neon, glitching, cyberpunk Clawd that boots up in place of Claude Code's startup logo, plus cyberpunk spinner words",
+  "description": "A neon, glitching, cyberpunk Clawd that boots up under Claude Code's startup logo, plus cyberpunk spinner words",
   "author": { "name": "liveinknewgithub", "url": "https://github.com/liveinknewgithub" },
   "homepage": "https://github.com/liveinknewgithub/cyber-clawd",
   "repository": "https://github.com/liveinknewgithub/cyber-clawd",
